@@ -10,11 +10,11 @@ def initialize():
     global cur_charge # in percentage points
     global cur_time # in minutes
     global good_battery_health
+    
     cur_time = 0
-    good_battery_health = True
-
     cur_charge = 50
     cur_temp = 20
+    good_battery_health = True
 
 def simulate_activity(activity, duration):
     pass
