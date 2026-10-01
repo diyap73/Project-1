@@ -23,7 +23,9 @@ def duration_fast_charge_possible():
     pass
 
 def get_cur_temp():
-    pass
+    global cur_temp
+    cur_temp = float(cur_temp)
+    return cur_temp
 
 def get_cur_charge():
     global cur_charge
