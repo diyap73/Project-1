@@ -27,7 +27,8 @@ def get_cur_temp():
 
 def get_cur_charge():
     global cur_charge
-    return float(cur_charge)
+    cur_charge = float(cur_charge)
+    return cur_charge
 
 def get_cur_battery_health():
     pass
