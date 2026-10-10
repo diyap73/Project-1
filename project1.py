@@ -26,7 +26,7 @@ def duration_fast_charge_possible():
     minutes_fast_charge_possible = 0
     while battery_health and cur_temp < 40 and cur_charge < 80:
         cur_charge += 3 # fast charge makes charges the phone at 3% per minute
-        cur_temp += 0.5
+        cur_temp += 0.5 # fast charge increases the temperature by 0.5oC per minute
         minutes_fast_charge_possible += 1
         
     
