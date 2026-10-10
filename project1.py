@@ -20,16 +20,27 @@ def simulate_activity(activity, duration):
     pass
 
 def duration_fast_charge_possible():
-   # cur_charge = 80
-   # cur_temp = 39.5
-   # battery_health = True
+    cur_charge = 70
+    cur_temp = 0
+    battery_health = True
     minutes_fast_charge_possible = 0
-    while battery_health and cur_temp <= 40 and cur_charge <= 80:
-        cur_charge += 3 # fast charge makes charges the phone at 3% per minute
-        cur_temp += 0.5 # fast charge increases the temperature by 0.5oC per minute
-        minutes_fast_charge_possible += 1
-        
-    
+    minutes_fast_charge_possible_charge = 0
+    minutes_fast_charge_possible_temp = 0
+    # while battery_health and cur_temp <= 40 and cur_charge < 80:
+    #     cur_charge += 3
+    #     cur_temp += 0.5
+    if battery_health == True:
+
+        if cur_charge < 80:
+                minutes_fast_charge_possible_charge += 1 * (80 - cur_charge) / 3
+        if cur_temp < 40:
+                minutes_fast_charge_possible_temp += 1 * (40 - cur_temp) / 0.5
+        if minutes_fast_charge_possible_temp < minutes_fast_charge_possible_charge:
+                minutes_fast_charge_possible = minutes_fast_charge_possible_temp
+        else:
+                minutes_fast_charge_possible = minutes_fast_charge_possible_charge
+
+
     return minutes_fast_charge_possible
 
 def get_cur_temp():
