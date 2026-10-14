@@ -163,7 +163,7 @@ def simulate_activity(activity, duration):
 def charge_time_needed(minutes):
 
     global cur_charge, battery_health
-
+    # this is the total charge needed not just the additional charge needed
     charge_needed = 2 * minutes
 
     if cur_charge > charge_needed:
