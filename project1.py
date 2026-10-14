@@ -54,26 +54,40 @@ def get_cur_battery_health():
     pass
     
 def charge_time_needed(minutes):
-    time_needed = 2 * minutes
-    if cur_charge > time_needed:
+
+    global cur_charge, battery_health
+
+    charge_needed = 2 * minutes
+
+    if cur_charge > charge_needed:
         return 0
-    if time_needed > 100:
+
+    if charge_needed > 100:
         return None
-        
+
     # bad battery health, can only slow charge
     if battery_health == False:
-        if time_needed > 80:
+
+        if charge_needed > 80:
             return None
+
         else:
-            return(time_needed - cur_charge)
+            return(charge_needed - cur_charge)
     # good battery health, fast charging until 80% and then slow charging
     else:
+
         # finding if the fast charge duration is smaller because of smth like the temperature or battery health
-        fast = min(duration_fast_charge_possible(), ((time_needed - cur_charge) / 3))
-        cur_charge_after_fast = cur_charge + 3 * fast
+        # target reached before the fast charge limit
+        if duration_fast_charge_possible() < ((charge_needed - cur_charge) / 3):
+            cur_charge_after_fast = cur_charge + 3 * duration_fast_charge_possible()
+
+        # target reached during fast charging
+        else:
+            cur_charge_after_fast = cur_charge + 3 * duration_fast_charge_possible()
         # slow charge for the time remaining after the fast charge
-        slow = time_needed - cur_charge_after_fast
-        return(fast + slow)
+        duration_slow_charge_possible = charge_needed - cur_charge_after_fast
+
+        return cur_charge_after_fast + duration_slow_charge_possible
 
 if __name__ == '__main__':
 
