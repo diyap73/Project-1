@@ -5,11 +5,13 @@ def initialize():
     global cur_charge # in percentage points
     global cur_time # in minutes
     global good_battery_health
+    global times_overcharged
 
     cur_temp = 20
     cur_charge = 50
     cur_time = 0
     good_battery_health = True
+    times_overcharged = []
 
 # Returns the current temperature of the battery, as a float
 def get_cur_temp():
@@ -30,8 +32,6 @@ def get_cur_charge():
 # Returns the health of the battery, as a boolean
 def get_cur_battery_health():
 
-    global good_battery_health
-
     return good_battery_health
 
 # Returns the duration for which fast charge is possible based on the current
@@ -41,7 +41,9 @@ def duration_fast_charge_possible():
     global cur_temp, cur_charge, good_battery_health
 
     minutes_fast_charge_possible = 0
+    # affect of max charge on max fast charge
     minutes_fast_charge_possible_charge = 0
+    # affect of max temp on max fast charge
     minutes_fast_charge_possible_temp = 0
 
     # Checking if the battery health is good
@@ -52,7 +54,7 @@ def duration_fast_charge_possible():
             minutes_fast_charge_possible_charge += (80 - cur_charge) / 3
 
         # Fast charge is possible if the temperature is less than 40
-        if cur_temp < 40:
+        if cur_temp >= 0 and cur_temp <= 40:
             minutes_fast_charge_possible_temp += (40 - cur_temp) / 0.5
 
         # Checking which condition gives the smaller value
@@ -74,7 +76,6 @@ def simulate_activity(activity, duration):
     global cur_temp, cur_charge, cur_time, good_battery_health
 
     overcharged = False
-    times_overcharged = []
 
     # Activity: charge
     if activity == 'charge':
@@ -84,7 +85,7 @@ def simulate_activity(activity, duration):
             cur_time += 1
 
             # Fast charging occurs
-            if cur_temp > 0 and cur_temp < 40 and cur_charge < 80 and \
+            if cur_temp >= 0 and cur_temp <= 40 and cur_charge < 80 and \
             good_battery_health:
 
                 cur_temp += 0.5
@@ -101,11 +102,11 @@ def simulate_activity(activity, duration):
                 else:
                     max_charge = 80
 
-                #
+                # Increase charge by 1 percent
                 if cur_charge < max_charge:
                     cur_charge += 1
 
-                    # Might surpass 80
+                    # For fractional values such as 79.5 + 1 = 80.5
                     if cur_charge > max_charge:
                         cur_charge = max_charge
 
@@ -161,40 +162,71 @@ def simulate_activity(activity, duration):
             cur_temp = 0
 
 def charge_time_needed(minutes):
-
-    global cur_charge, battery_health
-    # this is the total charge needed not just the additional charge needed
+    # total charge (in %) the battery must have for `minutes` of use,
+    # since use drains 2% per minute
     charge_needed = 2 * minutes
 
-    if cur_charge > charge_needed:
+    # already enough charge, no charging needed
+    if cur_charge >= charge_needed:
         return 0
 
     if charge_needed > 100:
         return None
 
-    # bad battery health, can only slow charge
-    if battery_health == False:
+    # making local variables to not edit the global variables
+    charge = cur_charge
+    temp = cur_temp
+    time = cur_time
+    health = good_battery_health
+    overcharges = list(times_overcharged)
 
-        if charge_needed > 80:
+    overcharged = False
+    # number of minutes of charging simulated so far
+    minutes_charged = 0
+
+    while charge < charge_needed:
+        time += 1
+        minutes_charged += 1
+        # save the charge before this minute, to check later if it increased
+        charge_before = charge
+        
+        # fast charge
+        if temp >= 0 and temp <= 40 and charge < 80 and health:
+            charge += 3
+            temp += 0.5
+
+            if charge > 100:
+                charge = 100
+
+        else:
+            if health:
+                max_charge = 100
+            else:
+                max_charge = 80
+            # slow charge
+            if charge < max_charge:
+                charge += 1
+
+                # Fractional values
+                # don't go past the maximum (matters for fractional charges)
+                if charge > max_charge:
+                    charge = max_charge
+
+            temp += 0.25
+        # Considering battery overcharging
+        if health and not overcharged and charge >= 90:
+
+            overcharged = True
+            overcharges.append(time)
+
+            if len(overcharges) >= 3 and \
+                overcharges[-1] - overcharges[-3] < 360:
+                health = False
+
+        if charge == charge_before:
             return None
 
-        else:
-            return(charge_needed - cur_charge)
-    # good battery health, fast charging until 80% and then slow charging
-    else:
-
-        # finding if the fast charge duration is smaller because of smth like the temperature or battery health
-        # target reached before the fast charge limit
-        if duration_fast_charge_possible() < ((charge_needed - cur_charge) / 3):
-            cur_charge_after_fast = cur_charge + 3 * duration_fast_charge_possible()
-
-        # target reached during fast charging
-        else:
-            cur_charge_after_fast = cur_charge + 3 * duration_fast_charge_possible()
-        # slow charge for the time remaining after the fast charge
-        duration_slow_charge_possible = charge_needed - cur_charge_after_fast
-
-        return cur_charge_after_fast + duration_slow_charge_possible
+    return minutes_charged
 
 if __name__ == '__main__':
 
@@ -237,5 +269,7 @@ if __name__ == '__main__':
     simulate_activity("charge",80)
     print(get_cur_charge()) # 80
     print(get_cur_temp()) # 82.5
+
+    initialize()
 
     # add your tests here
